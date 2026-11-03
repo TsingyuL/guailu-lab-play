@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#9fd6bd">
+  <meta name="description" content="怪路实验室：异星卡通物理赛车。按顺序挑战怪路，开到指定距离解锁下一关，自动保存最远距离与最快通关记录。支持微信小游戏。">
+  <title>怪路实验室 · 怪物公路</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fd6bd;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}canvas{display:block;width:100%;height:100%;touch-action:none;outline:none;-webkit-user-select:none;user-select:none}#load-error{display:none;padding:40px;color:#234d43}#load-error a{color:inherit}
+  </style>
+</head>
+<body>
+  <canvas id="game" tabindex="0" aria-label="怪路实验室竖屏登山赛车，新开局默认免费独轮车。首页提供车库、地图和关卡记录。上下滑动探索地图，按顺序通关。油门前进，后退提供等量反向动力；独轮车空中保持油门较稳定，后退可压头。双踏板驻车加油，左侧跳跃或 J 越过断路、躲开迎面冲来的小怪；主动起跳后再按一次可立即二段跳。小怪来前有预警，撞上会减速，跳过有奖励。空中倒转仍可救车，倒地持续触地2秒才判失败。开到指定距离过关，每趟结束保存最远距离和最快通关时间。对准坡面完成漂亮落地会立即触发落地冲刺，连续稳落还会进入顺风节奏。不同路面有不同声音，发动机声随油门和车速变化。"></canvas>
+  <div id="load-error">游戏加载失败，请使用 <b>npm start</b> 启动本地服务后重试。</div>
+  <script>
+    // 浏览器仅用于本地试玩；微信使用 game.js 和原生 require。
+    (async function () {
+      const names = ['config', 'level-lab', 'course', 'physics', 'mechanics', 'audio', 'platform', 'sketch', 'renderer', 'tuning', 'telemetry', 'game', 'ui-theme', 'driving-skills', 'ui-skills', 'ui-light', 'ui-reference', 'monsters', 'runtime', 'visual-pack'];
+      const modules = {};
+      try {
+        for (const name of names) {
+          // Local review builds must reflect the current source after reload;
+          // stale module responses otherwise make gameplay tuning appear absent.
+          const response = await fetch('./js/' + name + '.js', { cache: 'no-store' });
+          if (!response.ok) throw new Error('加载失败: ' + name);
+          const module = { exports: {} };
+          new Function('module', 'exports', 'require', (await response.text()) + '\n//# sourceURL=js/' + name + '.js')(module, module.exports, id => modules[id.replace('./', '')]);
+          modules[name] = module.exports;
+        }
+        const params = new URLSearchParams(location.search);
+        const platform = modules.platform.createPlatform();
+        const labStage = params.get('labStage');
+        if (labStage !== null) {
+          // Lab runs have an in-memory save and event stream; they never touch
+          // the player's browser save, even after finishing or upgrading.
+          let labSave=modules['level-lab'].createLabSave(labStage,params.get('labVariant'),params.get('labVehicle'),params.get('labBuild'));
+          platform.load=()=>labSave;
+          platform.save=data=>{labSave=data;return true;};
+          platform.loadTelemetry=()=>[];
+          platform.saveTelemetry=()=>true;
+        }
+        const game = modules.runtime.createRuntimeGame(platform);
+        // The supplied visual system is the production default in both the
+        // browser and WeChat. `visualPack=0` remains available for diagnostics.
+        if (params.get('visualPack') !== '0') game.visualPack = await modules['visual-pack'].loadVisualPack(game.platform || modules.platform.createPlatform, './assets/wildroad-pack-v1');
+        window.wildroad = game;
+        if (labStage !== null) game.newRun();
+        if (params.get('quickStart') === '1') {
+          game.save.route = 0;
+          game.save.vehicle = 6;
+          game.newRun();
+        }
+        game.startLoop();
+      } catch (error) {
+        console.error(error);
+        document.getElementById('game').style.display = 'none';
+        document.getElementById('load-error').style.display = 'block';
+      }
+    })();
+  </script>
+</body>
+</html>

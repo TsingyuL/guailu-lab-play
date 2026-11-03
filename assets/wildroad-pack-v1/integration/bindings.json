@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "coordinate_system": "vehicle local; origin at wheel center; +x right, +y down",
+  "wheel": { "source": "sprites/wheel.png", "source_pivot_px": [212, 213], "mount_px": [0, 0], "draw_rect_px": [-54, -54, 108, 108] },
+  "vehicle_body": { "source": "sprites/vehicle_body.png", "source_pivot_px": [162, 333], "mount_px": [0, -48], "draw_rect_px": [-46, -95, 91, 98] },
+  "rider": { "source": "sprites/rider.png", "source_pivot_px": [188, 513], "mount_px": [7, -31], "draw_rect_px": [-45, -174, 102, 143] },
+  "notes": [
+    "轮胎按图像中心旋转。",
+    "车身底部叉口对准轮轴；人物脚底对准踏板、双手对准把手。",
+    "三件共同随车体角度旋转，轮胎另外叠加 wheelSpin。"
+  ]
+}
